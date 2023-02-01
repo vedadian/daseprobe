@@ -1,0 +1,2 @@
+# DaSeProbe, the dataset probing utility
+DaSeProbe is a dataset inspection utility, initially started to help me with inspecting object detection results of YOLO models on test datasets -- specifically, showing the detection results alongside the annotations. It might grow to accomodate further requirements in upcoming projects corresponding to machine vision.
