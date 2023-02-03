@@ -10,16 +10,20 @@ def get_dataset_item_key(file_path):
 def populate_dataset_images(dataset_root_path):
     return list(glob.glob(f'{dataset_root_path}/**/*.jpg', recursive=True))
 
-def populate_dataset_annotations(dataset_root_path):
+def populate_dataset_annotations(dataset_root_path, *additional_annotations_paths):
     result = {}
     for f in glob.glob(f'{dataset_root_path}/**/*.txt', recursive=True):
         key = get_dataset_item_key(f)
         if not key in result:
-            result[key] = []
-        result[key].append(f)
+            result[key] = [f]
+    for p in additional_annotations_paths:
+        for f in glob.glob(f'{p}/**/*.txt', recursive=True):
+            key = get_dataset_item_key(f)
+            if key in result:
+                result[key].append(f)
     return result
 
-def create_application(dataset_root_path):
+def create_application(dataset_root_path, *additional_annotations_paths):
     app = flask.Flask(
         __name__,
         static_url_path="/",
@@ -50,7 +54,7 @@ def create_application(dataset_root_path):
         return decorator
 
     images = populate_dataset_images(dataset_root_path)
-    annotations = populate_dataset_annotations(dataset_root_path)
+    annotations = populate_dataset_annotations(dataset_root_path, *additional_annotations_paths)
 
     @api_route("/api/image_count")
     def image_count():
@@ -62,10 +66,14 @@ def create_application(dataset_root_path):
 
     @api_route("/api/annotations")
     def get_annotations(index):
-        result = [
-            [[float(e) for e in l.strip().split()] for l in open(f)]
-            for f in annotations[get_dataset_item_key(images[int(index)])]
-        ]
+        key = get_dataset_item_key(images[int(index)])
+        result = {
+            'k': key,
+            'a': [
+                [[float(e) for e in l.strip().split()] for l in open(f)]
+                for f in annotations[key]
+            ]
+        }
         return result
 
     app.run(
@@ -76,4 +84,4 @@ def create_application(dataset_root_path):
     )
 
 if __name__ == "__main__":
-    create_application("/data/Work/Yara/Datasets/bwr1")
+    create_application(*sys.argv[1:])
